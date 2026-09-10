@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoveAssist — AI-Assisted Lower-Limb Rehabilitation Exoskeleton | SIH 2026</title>
+  
+  <!-- Modern Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Application Navigation Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-text">
+        <h1>MoveAssist <span class="sih-tag">SIH 2026 • PS SIH26113</span></h1>
+        <div class="brand-subtitle">BERSERK TECHIES | TEAM-147 • AI-Assisted Lower-Limb Rehabilitation Exoskeleton</div>
+      </div>
+    </div>
+
+    <div class="header-status-bar">
+      <div class="status-item">
+        <span class="label">Gait Phase</span>
+        <span id="gait-phase-badge" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:#38bdf8;">INITIAL CONTACT</span>
+      </div>
+
+      <div class="status-item">
+        <span class="label">Strides</span>
+        <span id="stride-count" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:#f8fafc;">0</span>
+      </div>
+
+      <div class="status-item">
+        <span class="label">Motor Temp</span>
+        <span id="motor-temp" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:#34d399;">32.0°C</span>
+      </div>
+
+      <div class="status-item">
+        <span class="label">Safety Mode</span>
+        <div id="safety-mode-badge" class="status-badge badge-normal">
+          <span class="pulse-dot"></span> NORMAL AAN
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scientific Disclaimer Banner -->
+  <aside class="disclaimer-banner">
+    <div class="disclaimer-content">
+      <span class="disclaimer-icon">ℹ️</span>
+      <strong>Notice:</strong> Virtual Engineering Prototype &amp; Proof-of-Concept — Model estimates only, not direct biological measurements.
+    </div>
+    <div class="disclaimer-tech-info">
+      Simulation: 100 Hz Closed-Loop • Stream: 60 Hz SSE • Butterworth fc = 6.0 Hz • Safe ROM: 0° - 115°
+    </div>
+  </aside>
+
+  <!-- Main Cockpit Layout -->
+  <main class="cockpit-container">
+    
+    <!-- Left Column: 3D Twin & Strip Charts -->
+    <section class="simulation-deck">
+      
+      <!-- 3D Digital Twin & 2D Engineering Schematic Viewport -->
+      <div class="viewport-card">
+        <div class="card-header-overlay">
+          <div class="viewport-title">
+            <span id="viewport-mode-icon">◫</span>
+            <span id="viewport-mode-title">Digital Twin (3D + 2D Split View)</span>
+          </div>
+          <div class="viewport-controls">
+            <!-- Split View Mode Toggles -->
+            <div class="view-mode-toggle-group">
+              <button id="btn-view-split" class="tool-btn active" title="Side-by-side 3D Digital Twin and 2D Engineering Schematic">◫ Split View</button>
+              <button id="btn-view-3d" class="tool-btn" title="Full 3D Digital Twin View">3D Only</button>
+              <button id="btn-view-2d" class="tool-btn" title="Full 2D Kinematic &amp; Actuator Schematic View">2D Schematic</button>
+            </div>
+            <div style="width:1px;height:18px;background:var(--border-subtle);margin:0 2px;"></div>
+            <button id="btn-toggle-exo" class="tool-btn active" title="Toggle Exoskeleton Visibility">Exoskeleton</button>
+            <button id="btn-toggle-anatomy" class="tool-btn active" title="Toggle Human Anatomy Visibility">Anatomy</button>
+            <button id="btn-toggle-sensors" class="tool-btn active" title="Toggle Virtual Sensors">Sensors</button>
+            <button id="btn-reset-cam" class="tool-btn" title="Reset Camera View">Reset Cam</button>
+          </div>
+        </div>
+
+        <!-- Kinematic Movement Modes & Exercise Ribbon -->
+        <div class="kinematics-mode-bar">
+          <div class="mode-bar-left">
+            <span class="mode-bar-label">EXERCISE MODE:</span>
+            <div class="mode-btn-group">
+              <button id="btn-mode-walk" class="mode-btn active" data-mode="WALK" title="Clinical Gait Walk (2.0s therapeutic cadence)">🚶 WALK</button>
+              <button id="btn-mode-sitstand" class="mode-btn" data-mode="SIT_STAND" title="Sit-to-Stand Functional Transfer Cycle (4.0s bilateral)">🪑 SIT-STAND</button>
+              <button id="btn-mode-run" class="mode-btn" data-mode="RUN" title="Accelerated Running Stride (0.85s cadence)">🏃 RUN</button>
+              <button id="btn-mode-standby" class="mode-btn" data-mode="STANDBY" title="Balanced Upright Stance Hold (10° knee lock)">🧍 STANDBY</button>
+              <button id="btn-mode-jog" class="mode-btn" data-mode="MANUAL_JOG" title="Manual Joint Angle Jog Control (0° - 115°)">⚙️ MANUAL JOG</button>
+            </div>
+          </div>
+          <!-- Manual Jog Slider Container (revealed when MANUAL_JOG is selected) -->
+          <div id="jog-slider-wrap" class="jog-slider-wrap" style="display:none;">
+            <span class="jog-label">Jog Angle:</span>
+            <input id="slider-manual-jog" type="range" min="0" max="115" step="0.5" value="0" class="jog-slider">
+            <span id="val-manual-jog" class="jog-val">0.0°</span>
+          </div>
+        </div>
+
+        <!-- Dual Split Viewport Stage -->
+        <div id="viewport-stage" class="viewport-stage split-view">
+          
+          <!-- Left Pane: 3D Three.js WebGL Digital Twin -->
+          <div id="pane-3d" class="viewport-pane pane-3d">
+            <div id="three-canvas-container"></div>
+
+            <!-- Real-Time Actuator Dynamic HUD Ring -->
+            <div class="actuator-hud-overlay">
+              <div class="hud-ring-wrapper">
+                <svg class="hud-ring-svg">
+                  <circle class="hud-ring-bg" cx="26" cy="26" r="22"></circle>
+                  <circle id="hud-ring-fill" class="hud-ring-fill" cx="26" cy="26" r="22"></circle>
+                </svg>
+                <div id="hud-center-val" class="hud-center-val">0%</div>
+              </div>
+              <div class="hud-details">
+                <span class="hud-title">3D Actuator Command</span>
+                <span id="hud-torque-val" class="hud-value">0.0 Nm</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Pane: 2D Biomechanical & Actuator Engineering Schematic -->
+          <div id="pane-2d" class="viewport-pane pane-2d">
+            <canvas id="schematic-2d-canvas"></canvas>
+
+            <!-- 2D Live Engineering Readout Badges -->
+            <div class="schematic-hud-overlay">
+              <div class="schematic-chip">
+                <span class="chip-label">MODE</span>
+                <span id="schematic-val-mode" class="chip-val" style="color:#38bdf8;">WALK</span>
+              </div>
+              <div class="schematic-chip">
+                <span class="chip-label">KNEE ANGLE</span>
+                <span id="schematic-val-angle" class="chip-val" style="color:#38bdf8;">0.0°</span>
+              </div>
+              <div class="schematic-chip">
+                <span class="chip-label">ACTUATOR TORQUE</span>
+                <span id="schematic-val-torque" class="chip-val" style="color:#f59e0b;">+0.0 Nm</span>
+              </div>
+              <div class="schematic-chip">
+                <span class="chip-label">ACTUATOR POWER</span>
+                <span id="schematic-val-power" class="chip-val" style="color:#a78bfa;">0.0 W</span>
+              </div>
+              <div class="schematic-chip">
+                <span class="chip-label">vGRF LOAD</span>
+                <span id="schematic-val-grf" class="chip-val" style="color:#10b981;">0 N</span>
+              </div>
+              <div id="schematic-lock-badge" class="schematic-chip" style="display:none;background:rgba(251,191,36,0.2);border-color:#fbbf24;">
+                <span class="chip-label" style="color:#fbbf24;">ANTI-BUCKLE</span>
+                <span class="chip-val" style="color:#fbbf24;">+18 Nm HOLD</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Biomechanical Assistance & Robotic Actuator Power Deck -->
+        <div class="power-assist-deck">
+          <!-- Left Sub-card: Human vs Exoskeleton Strength Utilization (Normalized 100%) -->
+          <div class="assist-distribution-card">
+            <div class="assist-card-header">
+              <div style="display:flex;align-items:center;gap:0.4rem;">
+                <span style="font-size:0.9rem;">⚖️</span>
+                <span class="assist-card-title">Joint Effort Distribution (100% Total)</span>
+              </div>
+              <span id="assist-mode-summary" class="assist-summary-badge">SHARED ASSIST</span>
+            </div>
+            
+            <div class="effort-meter-container">
+              <div class="effort-bar-labels">
+                <span class="effort-label human">
+                  <span class="effort-dot human"></span>
+                  Human Strength: <strong id="val-human-strength-pct">35.0%</strong>
+                  <span id="val-human-torque-nm" class="effort-sub">(+4.2 Nm)</span>
+                </span>
+                <span class="effort-label exo">
+                  <span class="effort-dot exo"></span>
+                  Exoskeleton Assist: <strong id="val-exo-strength-pct">65.0%</strong>
+                  <span id="val-exo-torque-nm" class="effort-sub">(+7.8 Nm)</span>
+                </span>
+              </div>
+              <div class="effort-bar-track">
+                <div id="bar-human-effort" class="effort-bar-fill human" style="width: 35%;"></div>
+                <div id="bar-exo-effort" class="effort-bar-fill exo" style="width: 65%;"></div>
+              </div>
+              <div class="effort-caption-row">
+                <span>Voluntary Biological Effort</span>
+                <span>Adaptive AAN Robotic Augmentation</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Sub-card: Robotic Actuators & Power Telemetry -->
+          <div class="actuator-power-card">
+            <div class="assist-card-header">
+              <div style="display:flex;align-items:center;gap:0.4rem;">
+                <span style="font-size:0.9rem;">⚡</span>
+                <span class="assist-card-title">Robotic Actuator &amp; Power Telemetry</span>
+              </div>
+              <span id="actuator-load-badge" class="actuator-load-badge">LOAD: 0.0%</span>
+            </div>
+
+            <div class="power-metrics-grid">
+              <div class="power-metric-item">
+                <span class="p-label">MECHANICAL POWER</span>
+                <div class="p-value-wrap">
+                  <span id="val-mech-power" class="p-val">0.0</span>
+                  <span class="p-unit">W</span>
+                </div>
+                <span class="p-meta">P = |τ · ω|</span>
+              </div>
+
+              <div class="power-metric-item">
+                <span class="p-label">ELECTRICAL POWER</span>
+                <div class="p-value-wrap">
+                  <span id="val-elec-power" class="p-val" style="color:#38bdf8;">6.5</span>
+                  <span class="p-unit">W</span>
+                </div>
+                <span class="p-meta">BLDC Inverter + I²R</span>
+              </div>
+
+              <div class="power-metric-item">
+                <span class="p-label">PEAK POWER</span>
+                <div class="p-value-wrap">
+                  <span id="val-peak-power" class="p-val" style="color:#fbbf24;">0.0</span>
+                  <span class="p-unit">W</span>
+                </div>
+                <span class="p-meta">Session Peak</span>
+              </div>
+
+              <div class="power-metric-item">
+                <span class="p-label">CUMULATIVE WORK</span>
+                <div class="p-value-wrap">
+                  <span id="val-cumulative-energy" class="p-val" style="color:#a78bfa;">0.000</span>
+                  <span class="p-unit">kJ</span>
+                </div>
+                <span class="p-meta">∫ P_mech dt</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Multi-Channel Real-Time Strip Charts Grid -->
+      <div class="charts-grid">
+        
+        <!-- Chart 1: Knee Torques -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span>📈</span> Knee Joint Torques (Nm)
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#06b6d4;"></span> Req</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> User</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Cmd</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#c084fc;"></span> Act</div>
+            </div>
+          </div>
+          <canvas id="chart-torques" class="chart-canvas"></canvas>
+        </div>
+
+        <!-- Chart 2: AAN Inverse Distribution (%) -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span>⚖️</span> AAN Assistance vs. User % (Inverse Relation)
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#38bdf8;"></span> Assist %</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#34d399;"></span> User %</div>
+            </div>
+          </div>
+          <canvas id="chart-aan" class="chart-canvas"></canvas>
+        </div>
+
+        <!-- Chart 3: Joint Kinematics -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span>📐</span> Knee Flexion Angle (ROM 0-115°)
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#38bdf8;"></span> Angle (°)</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#fbbf24;"></span> Vel (x0.2)</div>
+            </div>
+          </div>
+          <canvas id="chart-kinematics" class="chart-canvas"></canvas>
+        </div>
+
+        <!-- Chart 4: Muscle Fatigue & EMG -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span>🧬</span> Muscle Fatigue &amp; EMG Activation
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#f43f5e;"></span> Fatigue</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> EMG Env</div>
+            </div>
+          </div>
+          <canvas id="chart-fatigue" class="chart-canvas"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Right Column: Interactive Deck & Clinical Controls -->
+    <aside class="control-deck">
+      
+      <!-- Demonstration Panel -->
+      <div class="panel-card demo-banner">
+        <div class="panel-header" style="border:none;margin-bottom:0;padding-bottom:0;">
+          <div class="panel-title"><span>🎯</span> Clinical Demonstration</div>
+          <span style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">5-PHASE SHOWCASE</span>
+        </div>
+
+        <div class="demo-btn-row">
+          <button id="btn-start-demo" class="primary-btn">
+            <span>▶</span> START DEMONSTRATION
+          </button>
+        </div>
+
+        <!-- 5-Phase Pipeline Stepper -->
+        <div class="demo-stepper">
+          <div id="demo-step-1" class="step-chip" title="Phase 1: Weak Patient"></div>
+          <div id="demo-step-2" class="step-chip" title="Phase 2: Patient Improvement"></div>
+          <div id="demo-step-3" class="step-chip" title="Phase 3: Muscle Fatigue"></div>
+          <div id="demo-step-4" class="step-chip" title="Phase 4: Sudden Deterioration"></div>
+          <div id="demo-step-5" class="step-chip" title="Phase 5: Recovery"></div>
+        </div>
+
+        <div id="demo-narrative-text" class="demo-narrative-card">
+          Click 'START DEMONSTRATION' to run the automated 5-phase clinical showcase (Weak Patient → Improvement → Fatigue → Deterioration → Recovery).
+        </div>
+
+        <!-- Clinical Report Export Deck -->
+        <div class="report-deck-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div id="recording-badge" class="recording-badge" style="display:none;">
+              <span class="rec-dot"></span> RECORDING TRIAL DATA
+            </div>
+            <span id="report-samples-counter" style="font-size:0.68rem;font-family:var(--font-mono);color:var(--text-muted);">0 trial samples</span>
+          </div>
+
+          <a id="btn-download-excel" href="/api/report/download" class="download-report-btn" title="Download formatted multi-sheet Excel workbook with all sensors, angles, torques, and clinical summary" download>
+            <span>📊</span> DOWNLOAD CLINICAL REPORT (.XLSX)
+          </a>
+
+          <div class="report-links-row">
+            <span style="font-size:0.65rem;color:var(--text-muted);">Multi-sheet: Summary, Angles, Sensors, AAN</span>
+            <a id="btn-download-csv" href="/api/report/csv" class="sub-download-link" download>Export Raw CSV</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety Supervisory Panel -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title"><span>🛡️</span> Safety Supervisor (Highest Authority)</div>
+        </div>
+
+        <div class="estop-deck">
+          <button id="btn-estop" class="estop-button">
+            <span>🚨</span> HARD EMERGENCY STOP
+          </button>
+
+          <!-- Controlled Soft E-Stop (Anti-Fall 30s to 2 Min Gradual Deceleration) -->
+          <div style="display:flex;gap:0.4rem;">
+            <button id="btn-soft-stop" class="soft-stop-button" style="flex:2;" title="Gently decelerates movement over 30s-2 min with anti-collapse upright support">
+              <span>🛑</span> CONTROLLED SOFT STOP
+            </button>
+            <select id="select-soft-stop-duration" class="anthro-input" style="flex:1.2;font-size:0.75rem;padding:0.4rem;" title="Controlled deceleration ramp duration">
+              <option value="30">30s (Rapid)</option>
+              <option value="60">60s (1.0m)</option>
+              <option value="90" selected>90s (1.5m)</option>
+              <option value="120">120s (2.0m)</option>
+            </select>
+          </div>
+
+          <!-- Active Soft Stop HUD Banner (Visible when active) -->
+          <div id="soft-stop-hud" class="soft-stop-hud-card" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:700;color:#fbbf24;">ANTI-FALL DECELERATION</span>
+              <span id="soft-stop-seriousness" style="font-size:0.62rem;font-family:var(--font-mono);font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.35);">ELEVATED</span>
+              <span id="soft-stop-timer" class="soft-stop-timer-text">01:30</span>
+            </div>
+            <div id="soft-stop-escalation-note" style="display:none;font-size:0.66rem;color:#f43f5e;font-weight:700;margin-top:2px;">
+              ⚡ ACUTE FALL RISK: Timer accelerated to 30s rapid anti-buckle!
+            </div>
+            <div class="soft-stop-progress-track">
+              <div id="soft-stop-progress-bar" class="soft-stop-progress-bar"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-muted);">
+              <span>Gait Cadence: <strong id="soft-stop-cadence-scale" style="color:#38bdf8;">100%</strong></span>
+              <span>Anti-Collapse Support: <strong style="color:#34d399;">+18.0 Nm Lock</strong></span>
+            </div>
+          </div>
+          
+          <button id="btn-reset-estop" class="secondary-btn" style="width:100%;">
+            Reset Safety / Restore Normal AAN
+          </button>
+
+          <!-- Sensor Fault Injectors & Fatigue Fall Simulator -->
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-top:0.25rem;">SAFETY INTERLOCK SIMULATORS</div>
+          <div class="fault-btn-grid">
+            <button id="btn-test-fatigue-fall" class="fault-btn" style="color:#fbbf24;border-color:rgba(251,191,36,0.4);" title="Simulate High Fatigue 88% -> Triggers 90s gradual stop">Fatigue 88% (90s)</button>
+            <button id="btn-test-fatigue-fall-acute" class="fault-btn" style="color:#f43f5e;border-color:rgba(244,63,94,0.5);font-weight:700;" title="Simulate Acute Collapse Fatigue 96% -> Immediate 30s rapid stop">Fatigue 96% (30s Urgent)</button>
+            <button id="btn-fault-imu" class="fault-btn">IMU Dropout</button>
+            <button id="btn-fault-fsr" class="fault-btn">FSR Disconnect</button>
+            <button id="btn-clear-faults" class="clear-fault-btn">Clear All Interlocks</button>
+          </div>
+
+          <!-- Active Alerts Container -->
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-top:0.25rem;">ACTIVE INTERLOCKS &amp; ALERTS</div>
+          <div id="safety-alerts-box" class="safety-alerts-box">
+            <span style="color:#64748b">All systems nominal. Multi-tier safety supervision active.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient Anthropometrics & Calibration -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title"><span>👤</span> Anthropometry &amp; Calibration</div>
+        </div>
+
+        <div class="anthro-grid">
+          <div class="anthro-input-wrap">
+            <label for="input-height">Height (m)</label>
+            <input id="input-height" class="anthro-input" type="number" step="0.01" min="1.30" max="2.10" value="1.75">
+          </div>
+          <div class="anthro-input-wrap">
+            <label for="input-mass">Mass (kg)</label>
+            <input id="input-mass" class="anthro-input" type="number" step="0.5" min="40.0" max="150.0" value="72.0">
+          </div>
+        </div>
+
+        <div class="anthro-stats-strip">
+          <span>Distal Mass: <strong id="stat-distal-mass" style="color:#38bdf8;">4.39 kg</strong></span>
+          <span>Knee MOI: <strong id="stat-knee-moi" style="color:#38bdf8;">0.385 kg·m²</strong></span>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+          <button id="btn-update-anthro" class="secondary-btn" style="flex:1;">Update Profile</button>
+          <button id="btn-calibrate" class="secondary-btn" style="flex:1;border-color:var(--color-cyan);">Auto-Calibrate</button>
+        </div>
+        <div id="cal-status-text" style="font-size:0.7rem;font-family:var(--font-mono);color:var(--text-muted);">
+          Status: CALIBRATED (100.0%)
+        </div>
+      </div>
+
+      <!-- Manual Overrides (Strength & Fatigue) -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title"><span>🎛️</span> Manual Simulation Overrides</div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-item">
+            <div class="slider-label-row">
+              <span>Patient Intrinsic Strength</span>
+              <span id="val-strength" class="slider-val">35%</span>
+            </div>
+            <input id="slider-strength" type="range" min="0.05" max="1.0" step="0.01" value="0.35">
+          </div>
+
+          <div class="slider-item">
+            <div class="slider-label-row">
+              <span>Accumulated Muscle Fatigue</span>
+              <span id="val-fatigue" class="slider-val">0%</span>
+            </div>
+            <input id="slider-fatigue" type="range" min="0.0" max="1.0" step="0.01" value="0.0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Virtual Sensor Matrix -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title"><span>📡</span> Virtual Sensors Telemetry</div>
+        </div>
+
+        <div class="sensor-matrix-grid">
+          <div class="sensor-chip">
+            <div class="sensor-chip-header">
+              <span>IMU THIGH</span>
+              <span class="sensor-dot"></span>
+            </div>
+            <span id="sensor-thigh-pitch" class="sensor-value-main">0.0°</span>
+            <span class="sensor-meta">Pitch / Sagittal Tilt</span>
+          </div>
+
+          <div class="sensor-chip">
+            <div class="sensor-chip-header">
+              <span>IMU SHANK</span>
+              <span class="sensor-dot"></span>
+            </div>
+            <span id="sensor-shank-pitch" class="sensor-value-main">0.0°</span>
+            <span class="sensor-meta">Pitch / Segment Tilt</span>
+          </div>
+
+          <div class="sensor-chip">
+            <div class="sensor-chip-header">
+              <span>ENCODER</span>
+              <span class="sensor-dot"></span>
+            </div>
+            <span id="sensor-encoder-angle" class="sensor-value-main">0.0°</span>
+            <span class="sensor-meta">0.088° Resolution</span>
+          </div>
+
+          <div class="sensor-chip">
+            <div class="sensor-chip-header">
+              <span>TRI-ZONE FSR</span>
+              <span class="sensor-dot"></span>
+            </div>
+            <span id="sensor-fsr-grf" class="sensor-value-main">0 N</span>
+            <span class="sensor-meta">Vertical GRF Total</span>
+          </div>
+
+          <div class="sensor-chip" style="grid-column: span 2;">
+            <div class="sensor-chip-header">
+              <span>sEMG (RECTUS FEMORIS)</span>
+              <span class="sensor-dot"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span id="sensor-emg-env" class="sensor-value-main">0.05</span>
+              <span class="sensor-meta">RMS Voluntary Drive Envelope</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Load Three.js & Controls (Offline-ready with CDN fallback) -->
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/vendor/OrbitControls.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+      document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>');
+    }
+  </script>
+
+  <!-- Application Modules -->
+  <script src="js/charts.js"></script>
+  <script src="js/three_app.js"></script>
+  <script src="js/schematic_2d.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
