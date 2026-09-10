@@ -2,6 +2,7 @@
 SIH 2026 | PS SIH26113 | Team: BERSERK TECHIES | Team ID: TEAM-147
 """
 
+import os
 from dataclasses import dataclass, field
 from typing import Dict, Any
 
@@ -62,8 +63,8 @@ class SimulationConfig:
     gravity: float = 9.80665             # Gravitational acceleration (m/s^2)
     butterworth_cutoff_hz: float = 6.0   # 2nd-order Butterworth cutoff frequency for derivatives
     
-    server_host: str = "127.0.0.1"
-    server_port: int = 8000
+    server_host: str = os.getenv("HOST", "0.0.0.0")
+    server_port: int = int(os.getenv("PORT", "8000"))
 
 # Global default instances
 DEFAULT_ANTHRO = AnthropometricDefaults()

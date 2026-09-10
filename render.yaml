@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: exo-skeleton
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /api/state
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
