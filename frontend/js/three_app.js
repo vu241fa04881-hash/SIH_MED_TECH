@@ -307,6 +307,24 @@ class MoveAssist3DViewer {
     this.actuatorGlowLight = new THREE.PointLight(0x06b6d4, 1.5, 1.2);
     actuatorGroup.add(this.actuatorGlowLight);
 
+    // 3D Rotational Torque Direction Indicator Arc & Cone
+    this.torqueIndicatorGroup = new THREE.Group();
+    this.torqueIndicatorGroup.position.set(0, 0, 0.02);
+
+    const arcGeo = new THREE.TorusGeometry(0.068, 0.0035, 8, 32, Math.PI * 0.7);
+    this.torqueArcMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+    this.torqueArcMesh = new THREE.Mesh(arcGeo, this.torqueArcMat);
+    this.torqueIndicatorGroup.add(this.torqueArcMesh);
+
+    const coneGeo = new THREE.ConeGeometry(0.010, 0.022, 8);
+    this.torqueConeMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+    this.torqueConeMesh = new THREE.Mesh(coneGeo, this.torqueConeMat);
+    this.torqueConeMesh.position.set(0.068 * Math.cos(Math.PI * 0.7), 0.068 * Math.sin(Math.PI * 0.7), 0);
+    this.torqueConeMesh.rotation.z = Math.PI * 0.7 + Math.PI / 2;
+    this.torqueIndicatorGroup.add(this.torqueConeMesh);
+
+    actuatorGroup.add(this.torqueIndicatorGroup);
+
     this.rightKnee.add(actuatorGroup);
 
     // 3. Shank Brace & Telescopic Linkage (Mounted on rightShank)
@@ -470,6 +488,25 @@ class MoveAssist3DViewer {
     if (this.actuatorGlowLight) {
       this.actuatorGlowLight.color.setHex(glowColor);
       this.actuatorGlowLight.intensity = intensity * 1.5;
+    }
+
+    // Dynamic 3D Rotational Torque Direction Indicator update
+    if (this.torqueIndicatorGroup) {
+      const rawCmdTorque = telemetry.torques?.commanded_nm ?? 0.0;
+      const absTorque = Math.abs(rawCmdTorque);
+      if (absTorque < 0.3 || mode === "EMERGENCY_STOP") {
+        this.torqueIndicatorGroup.visible = false;
+      } else {
+        this.torqueIndicatorGroup.visible = true;
+        const isExtension = rawCmdTorque >= 0;
+        const indColor = mode === "CONTROLLED_SOFT_STOP" ? 0xfbbf24 : (isExtension ? 0x10b981 : 0xa855f7);
+        if (this.torqueArcMat) this.torqueArcMat.color.setHex(indColor);
+        if (this.torqueConeMat) this.torqueConeMat.color.setHex(indColor);
+        // Flip rotation for extension (positive) vs flexion (negative)
+        this.torqueIndicatorGroup.rotation.z = isExtension ? 0 : Math.PI;
+        const scaleVal = Math.min(1.35, 0.85 + (absTorque / 35.0) * 0.5);
+        this.torqueIndicatorGroup.scale.set(scaleVal, scaleVal, scaleVal);
+      }
     }
 
     // 3. FSR Pressure Discs Scaling & Brightness

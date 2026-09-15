@@ -491,6 +491,13 @@ class SimulationEngine:
                 "actuator": {
                     "motor_temp_c": actuator_data["motor_temp_c"],
                 },
+                "simulation": {
+                    "running": self._is_running,
+                    "frequency_hz": 100.0,
+                    "dt": self.dt,
+                    "step_count": self.step_count,
+                    "time_elapsed_s": round(self.time_elapsed, 2)
+                },
                 "demo": demo_info,
                 "anthropometry": self.anthro.get_summary(),
                 "report_status": self.recorder.get_status()

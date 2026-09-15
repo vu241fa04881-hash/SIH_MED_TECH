@@ -94,6 +94,57 @@ class MoveAssistDashboard {
     this.cumEnergyVal = document.getElementById('val-cumulative-energy');
     this.actuatorLoadBadge = document.getElementById('actuator-load-badge');
 
+    // Simulation RUN / STOP Controls
+    this.btnToggleSim = document.getElementById('btn-toggle-sim');
+    this.simBtnIcon = document.getElementById('sim-btn-icon');
+    this.simBtnText = document.getElementById('sim-btn-text');
+    this.simStatusBadge = document.getElementById('sim-status-badge');
+
+    // 5 Primary Metric Cards
+    this.cardValMode = document.getElementById('card-val-mode');
+    this.cardValAngle = document.getElementById('card-val-angle');
+    this.cardValTorque = document.getElementById('card-val-torque');
+    this.cardSubTorque = document.getElementById('card-sub-torque');
+    this.cardValPower = document.getElementById('card-val-power');
+    this.cardValVgrf = document.getElementById('card-val-vgrf');
+    this.cardSubGait = document.getElementById('card-sub-gait');
+
+    // AI Assistance Panel Elements
+    this.aiValGait = document.getElementById('ai-val-gait');
+    this.aiValAssist = document.getElementById('ai-val-assist');
+    this.aiValTorque = document.getElementById('ai-val-torque');
+    this.aiValConfidence = document.getElementById('ai-val-confidence');
+    this.aiValAdaptation = document.getElementById('ai-val-adaptation');
+    this.aiValMode = document.getElementById('ai-val-mode');
+    this.aiValRecommendation = document.getElementById('ai-val-recommendation');
+
+    // Sensor Status Panel Elements
+    this.dotImuThigh = document.getElementById('dot-imu-thigh');
+    this.sensorThighVal = document.getElementById('sensor-thigh-val');
+    this.dotImuShank = document.getElementById('dot-imu-shank');
+    this.sensorShankVal = document.getElementById('sensor-shank-val');
+    this.dotEncoder = document.getElementById('dot-encoder');
+    this.sensorEncoderVal = document.getElementById('sensor-encoder-val');
+    this.dotFsr = document.getElementById('dot-fsr');
+    this.sensorFsrVal = document.getElementById('sensor-fsr-val');
+    this.dotEmg = document.getElementById('dot-emg');
+    this.sensorEmgVal = document.getElementById('sensor-emg-val');
+
+    // Actuator Status Card Elements
+    this.actuatorStatusTag = document.getElementById('actuator-status-tag');
+    this.actValStatus = document.getElementById('act-val-status');
+    this.actValTorque = document.getElementById('act-val-torque');
+    this.actValPower = document.getElementById('act-val-power');
+    this.actValAssist = document.getElementById('act-val-assist');
+    this.actValTemp = document.getElementById('act-val-temp');
+
+    // System Safety Overview Matrix
+    this.safetySuperBadge = document.getElementById('safety-super-badge');
+    this.safetyValJoint = document.getElementById('safety-val-joint');
+    this.safetyValActuator = document.getElementById('safety-val-actuator');
+    this.safetyValSensor = document.getElementById('safety-val-sensor');
+    this.safetyValEstop = document.getElementById('safety-val-estop');
+
     this.bindEvents();
   }
 
@@ -266,6 +317,46 @@ class MoveAssistDashboard {
       const active = e.target.classList.toggle('active');
       this.viewer.toggleLayer('sensors', active);
     });
+
+    // 7. Simulation RUN / PAUSE Toggle
+    if (this.btnToggleSim) {
+      this.btnToggleSim.addEventListener('click', async () => {
+        try {
+          const resp = await fetch('/api/simulation/toggle', { method: 'POST' });
+          if (resp.ok) {
+            const data = await resp.json();
+            this.setSimulationState(data.running);
+          }
+        } catch (e) {
+          console.warn('Simulation toggle failed:', e);
+        }
+      });
+    }
+  }
+
+  setSimulationState(running) {
+    if (this.btnToggleSim) {
+      if (running) {
+        this.btnToggleSim.classList.remove('paused');
+        this.btnToggleSim.classList.add('active');
+        if (this.simBtnIcon) this.simBtnIcon.textContent = '⏸';
+        if (this.simBtnText) this.simBtnText.textContent = 'PAUSE SIM';
+      } else {
+        this.btnToggleSim.classList.add('paused');
+        this.btnToggleSim.classList.remove('active');
+        if (this.simBtnIcon) this.simBtnIcon.textContent = '▶';
+        if (this.simBtnText) this.simBtnText.textContent = 'RESUME SIM';
+      }
+    }
+    if (this.simStatusBadge) {
+      if (running) {
+        this.simStatusBadge.className = 'status-badge badge-running';
+        this.simStatusBadge.innerHTML = `<span class="pulse-dot"></span> SIM: 100 Hz`;
+      } else {
+        this.simStatusBadge.className = 'status-badge badge-paused';
+        this.simStatusBadge.innerHTML = `<span class="pulse-dot" style="background:#fbbf24;"></span> SIM: PAUSED`;
+      }
+    }
   }
 
   update(telemetry) {
@@ -537,6 +628,120 @@ class MoveAssistDashboard {
     if (this.actuatorLoadBadge) this.actuatorLoadBadge.textContent = `LOAD: ${(p.actuator_load_pct ?? 0.0).toFixed(1)}%`;
     if (this.assistSummaryBadge) {
       this.assistSummaryBadge.textContent = currentMode === 'STANDBY' ? 'STATIC HOLD' : (currentMode === 'MANUAL_JOG' ? 'MANUAL JOG' : 'AAN ADAPTIVE');
+    }
+
+    // 12. Single-Source-of-Truth 5 Primary Metric Cards
+    const singleSourceKneeAngle = (k.knee_angle_deg || 0).toFixed(1);
+    const cmdTorqueVal = torques.commanded_nm ?? 0.0;
+    const cmdTorqueFormatted = `${cmdTorqueVal >= 0 ? '+' : ''}${cmdTorqueVal.toFixed(1)}`;
+    const mechWattsFormatted = (p.mechanical_watts ?? 0.0).toFixed(1);
+    const grfFormatted = Math.round(sensors.foot_pressure?.total_grf_n || 0);
+
+    if (this.cardValMode) this.cardValMode.textContent = currentMode;
+    if (this.cardValAngle) this.cardValAngle.textContent = singleSourceKneeAngle;
+    if (this.cardValTorque) this.cardValTorque.textContent = cmdTorqueFormatted;
+    if (this.cardSubTorque) {
+      this.cardSubTorque.textContent = Math.abs(cmdTorqueVal) > 15.0 ? 'High Augmentation' : (cmdTorqueVal >= 0 ? 'Extension Assist' : 'Flexion Assist');
+    }
+    if (this.cardValPower) this.cardValPower.textContent = mechWattsFormatted;
+    if (this.cardValVgrf) this.cardValVgrf.textContent = grfFormatted;
+    if (this.cardSubGait) {
+      const gPhase = (gait.phase || 'STANCE').replace('_', ' ');
+      this.cardSubGait.textContent = `${gPhase} Phase`;
+    }
+
+    // 13. AI Assistance Panel Telemetry
+    if (this.aiValGait) this.aiValGait.textContent = (gait.phase || 'STANCE').replace('_', ' ');
+    if (this.aiValAssist) this.aiValAssist.textContent = `${Math.round(exoPct)}%`;
+    if (this.aiValTorque) this.aiValTorque.textContent = `${cmdTorqueFormatted} N·m`;
+    if (this.aiValConfidence) {
+      const baseConf = sensors.all_healthy ? 94 : 68;
+      const fatiguePenalty = Math.round((telemetry.user?.fatigue_index || 0) * 6);
+      this.aiValConfidence.textContent = `${Math.max(60, baseConf - fatiguePenalty)}%`;
+    }
+    if (this.aiValAdaptation) {
+      this.aiValAdaptation.textContent = mode === 'NORMAL_AAN' ? 'ACTIVE (Converging)' : 'OVERRIDDEN';
+    }
+    if (this.aiValMode) {
+      this.aiValMode.textContent = currentMode === 'STANDBY' ? 'STATIC HOLD' : (currentMode === 'MANUAL_JOG' ? 'MANUAL JOG' : 'ADAPTIVE AAN');
+    }
+    if (this.aiValRecommendation) {
+      if (mode === 'EMERGENCY_STOP') {
+        this.aiValRecommendation.textContent = 'Emergency Stop engaged — Joint immobilized for safety';
+      } else if (mode === 'CONTROLLED_SOFT_STOP') {
+        this.aiValRecommendation.textContent = 'Anti-fall deceleration in progress — Anti-collapse stance lock active';
+      } else if ((telemetry.user?.fatigue_index || 0) > 0.85) {
+        this.aiValRecommendation.textContent = 'Critical fatigue detected (>85%) — Anti-fall soft stop recommended';
+      } else if ((telemetry.user?.fatigue_index || 0) > 0.40) {
+        this.aiValRecommendation.textContent = 'Elevated fatigue detected — Augmenting knee extension torque';
+      } else if ((telemetry.user?.effective_strength || 0.35) < 0.20) {
+        this.aiValRecommendation.textContent = 'Low voluntary patient drive — Increasing robotic AAN augmentation';
+      } else {
+        this.aiValRecommendation.textContent = 'Nominal gait trajectory — Maintaining adaptive assistance';
+      }
+    }
+
+    // 14. Sensor Status Panel
+    if (this.sensorThighVal) this.sensorThighVal.textContent = `${(sensors.imu_thigh?.pitch_deg || 0).toFixed(1)}°`;
+    if (this.sensorShankVal) this.sensorShankVal.textContent = `${(sensors.imu_shank?.pitch_deg || 0).toFixed(1)}°`;
+    if (this.sensorEncoderVal) this.sensorEncoderVal.textContent = `${singleSourceKneeAngle}°`;
+    if (this.sensorFsrVal) this.sensorFsrVal.textContent = `${grfFormatted} N`;
+    if (this.sensorEmgVal) this.sensorEmgVal.textContent = `${(sensors.emg?.envelope_norm || 0.05).toFixed(2)} RMS`;
+
+    const allSensorsOk = sensors.all_healthy !== false;
+    if (this.dotImuThigh) this.dotImuThigh.className = sensors.imu_thigh?.healthy !== false ? 'sensor-health-dot active' : 'sensor-health-dot fault';
+    if (this.dotImuShank) this.dotImuShank.className = sensors.imu_shank?.healthy !== false ? 'sensor-health-dot active' : 'sensor-health-dot fault';
+    if (this.dotEncoder) this.dotEncoder.className = sensors.encoder?.healthy !== false ? 'sensor-health-dot active' : 'sensor-health-dot fault';
+    if (this.dotFsr) this.dotFsr.className = sensors.foot_pressure?.healthy !== false ? 'sensor-health-dot active' : 'sensor-health-dot fault';
+
+    // 15. Actuator Status Card
+    if (this.actuatorStatusTag) {
+      this.actuatorStatusTag.textContent = mode === 'NORMAL_AAN' ? 'ACTIVE' : mode.replace('_', ' ');
+      this.actuatorStatusTag.className = mode === 'NORMAL_AAN' ? 'status-badge badge-normal' : 'status-badge badge-fallback';
+    }
+    if (this.actValStatus) this.actValStatus.textContent = mode === 'NORMAL_AAN' ? 'ACTIVE' : mode.replace('_', ' ');
+    if (this.actValTorque) this.actValTorque.textContent = `${cmdTorqueFormatted} N·m`;
+    if (this.actValPower) this.actValPower.textContent = `${mechWattsFormatted} W`;
+    if (this.actValAssist) this.actValAssist.textContent = `${Math.round(exoPct)} %`;
+    if (this.actValTemp) this.actValTemp.textContent = `${(telemetry.actuator?.motor_temp_c || 32.0).toFixed(1)} °C`;
+
+    // 16. System Safety Overview Matrix
+    if (this.safetySuperBadge) {
+      if (mode === 'NORMAL_AAN') {
+        this.safetySuperBadge.className = 'status-badge badge-normal';
+        this.safetySuperBadge.innerHTML = `<span class="pulse-dot"></span> ● NOMINAL`;
+      } else if (mode === 'CONTROLLED_SOFT_STOP') {
+        this.safetySuperBadge.className = 'status-badge badge-soft-stop';
+        this.safetySuperBadge.innerHTML = `<span class="pulse-dot"></span> ● SOFT STOP`;
+      } else if (mode === 'EMERGENCY_STOP') {
+        this.safetySuperBadge.className = 'status-badge badge-estop';
+        this.safetySuperBadge.innerHTML = `<span class="pulse-dot"></span> ● E-STOP LATCHED`;
+      } else {
+        this.safetySuperBadge.className = 'status-badge badge-protective';
+        this.safetySuperBadge.innerHTML = `<span class="pulse-dot"></span> ● PROTECTIVE`;
+      }
+    }
+
+    if (this.safetyValJoint) {
+      this.safetyValJoint.textContent = (k.knee_angle_deg >= 114.0 || k.knee_angle_deg <= 1.0) ? 'MARGINAL' : 'NORMAL (0°-115°)';
+      this.safetyValJoint.className = (k.knee_angle_deg >= 114.0 || k.knee_angle_deg <= 1.0) ? 'sm-val text-amber' : 'sm-val text-emerald';
+    }
+    if (this.safetyValActuator) {
+      this.safetyValActuator.textContent = Math.abs(cmdTorqueVal) >= 34.5 ? 'PEAK CEILING' : 'NORMAL (≤35 N·m)';
+      this.safetyValActuator.className = Math.abs(cmdTorqueVal) >= 34.5 ? 'sm-val text-amber' : 'sm-val text-emerald';
+    }
+    if (this.safetyValSensor) {
+      this.safetyValSensor.textContent = allSensorsOk ? 'NONE' : 'FAULT DETECTED';
+      this.safetyValSensor.className = allSensorsOk ? 'sm-val text-emerald' : 'sm-val text-rose';
+    }
+    if (this.safetyValEstop) {
+      this.safetyValEstop.textContent = safety.e_stop_latched ? 'LATCHED' : 'READY';
+      this.safetyValEstop.className = safety.e_stop_latched ? 'sm-val text-rose' : 'sm-val text-emerald';
+    }
+
+    // 17. Simulation State Synchronization
+    if (telemetry.simulation) {
+      this.setSimulationState(telemetry.simulation.running);
     }
   }
 }

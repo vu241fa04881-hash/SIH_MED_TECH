@@ -20,32 +20,37 @@
     <div class="header-brand">
       <div class="brand-icon">⚡</div>
       <div class="brand-text">
-        <h1>MoveAssist <span class="sih-tag">SIH 2026 • PS SIH26113</span></h1>
-        <div class="brand-subtitle">BERSERK TECHIES | TEAM-147 • AI-Assisted Lower-Limb Rehabilitation Exoskeleton</div>
+        <h1>MoveAssist <span class="sih-tag">SIH 2026 • PS SIH26113 • TEAM-147</span></h1>
+        <div class="brand-subtitle">AI-Assisted Lower-Limb Rehabilitation Exoskeleton • BERSERK TECHIES</div>
       </div>
     </div>
 
-    <div class="header-status-bar">
-      <div class="status-item">
-        <span class="label">Gait Phase</span>
-        <span id="gait-phase-badge" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:#38bdf8;">INITIAL CONTACT</span>
+    <div class="header-main-controls">
+      <div class="header-status-item">
+        <span class="h-label">Gait:</span>
+        <span id="gait-phase-badge" class="h-val text-cyan">INITIAL CONTACT</span>
       </div>
 
-      <div class="status-item">
-        <span class="label">Strides</span>
-        <span id="stride-count" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:#f8fafc;">0</span>
+      <div class="header-status-item">
+        <span class="h-label">Strides:</span>
+        <span id="stride-count" class="h-val">0</span>
       </div>
 
-      <div class="status-item">
-        <span class="label">Motor Temp</span>
-        <span id="motor-temp" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:#34d399;">32.0°C</span>
+      <div class="header-status-item">
+        <span class="h-label">Motor:</span>
+        <span id="motor-temp" class="h-val text-emerald">32.0°C</span>
       </div>
 
-      <div class="status-item">
-        <span class="label">Safety Mode</span>
-        <div id="safety-mode-badge" class="status-badge badge-normal">
-          <span class="pulse-dot"></span> NORMAL AAN
-        </div>
+      <button id="btn-toggle-sim" class="tool-btn sim-btn active" title="Toggle closed-loop simulation (100 Hz)">
+        <span id="sim-btn-icon">⏸</span> <span id="sim-btn-text">PAUSE SIM</span>
+      </button>
+
+      <div id="sim-status-badge" class="status-badge badge-running" title="Master simulation fast loop executing at 100 Hz">
+        <span class="pulse-dot"></span> SIM: 100 Hz
+      </div>
+
+      <div id="safety-mode-badge" class="status-badge badge-normal" title="Multi-tier safety supervisor operating state">
+        <span class="pulse-dot"></span> NORMAL AAN
       </div>
     </div>
   </header>
@@ -54,38 +59,45 @@
   <aside class="disclaimer-banner">
     <div class="disclaimer-content">
       <span class="disclaimer-icon">ℹ️</span>
-      <strong>Notice:</strong> Virtual Engineering Prototype &amp; Proof-of-Concept — Model estimates only, not direct biological measurements.
+      <strong>Notice:</strong> Virtual Engineering Prototype &amp; Proof-of-Concept — Simulation estimates only, not direct biological measurements.
     </div>
     <div class="disclaimer-tech-info">
-      Simulation: 100 Hz Closed-Loop • Stream: 60 Hz SSE • Butterworth fc = 6.0 Hz • Safe ROM: 0° - 115°
+      Simulation: 100 Hz Closed-Loop • Stream: 60 Hz SSE • Safe ROM: 0° - 115° • Max Torque: ±35 N·m
     </div>
   </aside>
 
   <!-- Main Cockpit Layout -->
   <main class="cockpit-container">
     
-    <!-- Left Column: 3D Twin & Strip Charts -->
+    <!-- Left Column: 3D Twin, 2D Schematic, Metrics & Charts -->
     <section class="simulation-deck">
       
-      <!-- 3D Digital Twin & 2D Engineering Schematic Viewport -->
+      <!-- 3D Digital Twin & 2D Engineering Schematic Viewport Card -->
       <div class="viewport-card">
-        <div class="card-header-overlay">
+        
+        <!-- Digital Twin Controls Toolbar (Natural flex flow, NO overlap) -->
+        <div class="viewport-toolbar">
           <div class="viewport-title">
             <span id="viewport-mode-icon">◫</span>
             <span id="viewport-mode-title">Digital Twin (3D + 2D Split View)</span>
           </div>
+
           <div class="viewport-controls">
             <!-- Split View Mode Toggles -->
             <div class="view-mode-toggle-group">
               <button id="btn-view-split" class="tool-btn active" title="Side-by-side 3D Digital Twin and 2D Engineering Schematic">◫ Split View</button>
-              <button id="btn-view-3d" class="tool-btn" title="Full 3D Digital Twin View">3D Only</button>
-              <button id="btn-view-2d" class="tool-btn" title="Full 2D Kinematic &amp; Actuator Schematic View">2D Schematic</button>
+              <button id="btn-view-3d" class="tool-btn" title="Full 3D Digital Twin View">🦾 3D Only</button>
+              <button id="btn-view-2d" class="tool-btn" title="Full 2D Kinematic &amp; Actuator Schematic View">📐 2D Schematic</button>
             </div>
-            <div style="width:1px;height:18px;background:var(--border-subtle);margin:0 2px;"></div>
-            <button id="btn-toggle-exo" class="tool-btn active" title="Toggle Exoskeleton Visibility">Exoskeleton</button>
-            <button id="btn-toggle-anatomy" class="tool-btn active" title="Toggle Human Anatomy Visibility">Anatomy</button>
-            <button id="btn-toggle-sensors" class="tool-btn active" title="Toggle Virtual Sensors">Sensors</button>
-            <button id="btn-reset-cam" class="tool-btn" title="Reset Camera View">Reset Cam</button>
+
+            <div class="toolbar-divider"></div>
+
+            <div class="layer-toggle-group">
+              <button id="btn-toggle-exo" class="tool-btn active" title="Toggle Exoskeleton Visibility">Exoskeleton</button>
+              <button id="btn-toggle-anatomy" class="tool-btn active" title="Toggle Human Anatomy Visibility">Anatomy</button>
+              <button id="btn-toggle-sensors" class="tool-btn active" title="Toggle Virtual Sensors">Sensors</button>
+              <button id="btn-reset-cam" class="tool-btn" title="Reset Camera View">Reset Camera</button>
+            </div>
           </div>
         </div>
 
@@ -127,7 +139,7 @@
               </div>
               <div class="hud-details">
                 <span class="hud-title">3D Actuator Command</span>
-                <span id="hud-torque-val" class="hud-value">0.0 Nm</span>
+                <span id="hud-torque-val" class="hud-value">0.0 N·m</span>
               </div>
             </div>
           </div>
@@ -135,37 +147,214 @@
           <!-- Right Pane: 2D Biomechanical & Actuator Engineering Schematic -->
           <div id="pane-2d" class="viewport-pane pane-2d">
             <canvas id="schematic-2d-canvas"></canvas>
-
-            <!-- 2D Live Engineering Readout Badges -->
-            <div class="schematic-hud-overlay">
-              <div class="schematic-chip">
-                <span class="chip-label">MODE</span>
-                <span id="schematic-val-mode" class="chip-val" style="color:#38bdf8;">WALK</span>
-              </div>
-              <div class="schematic-chip">
-                <span class="chip-label">KNEE ANGLE</span>
-                <span id="schematic-val-angle" class="chip-val" style="color:#38bdf8;">0.0°</span>
-              </div>
-              <div class="schematic-chip">
-                <span class="chip-label">ACTUATOR TORQUE</span>
-                <span id="schematic-val-torque" class="chip-val" style="color:#f59e0b;">+0.0 Nm</span>
-              </div>
-              <div class="schematic-chip">
-                <span class="chip-label">ACTUATOR POWER</span>
-                <span id="schematic-val-power" class="chip-val" style="color:#a78bfa;">0.0 W</span>
-              </div>
-              <div class="schematic-chip">
-                <span class="chip-label">vGRF LOAD</span>
-                <span id="schematic-val-grf" class="chip-val" style="color:#10b981;">0 N</span>
-              </div>
-              <div id="schematic-lock-badge" class="schematic-chip" style="display:none;background:rgba(251,191,36,0.2);border-color:#fbbf24;">
-                <span class="chip-label" style="color:#fbbf24;">ANTI-BUCKLE</span>
-                <span class="chip-val" style="color:#fbbf24;">+18 Nm HOLD</span>
-              </div>
-            </div>
           </div>
 
         </div>
+
+      </div>
+
+      <!-- Primary Metric Cards (5 Equal-Height Cards) -->
+      <div class="primary-metrics-deck">
+        <div class="primary-metric-card" data-tooltip="Active kinematic movement trajectory">
+          <div class="card-top-label">
+            <span>MODE</span>
+            <span class="info-icon">ⓘ</span>
+          </div>
+          <div id="card-val-mode" class="metric-hero-val text-cyan">WALK</div>
+          <div class="metric-sub-label">2.0s Cadence</div>
+        </div>
+
+        <div class="primary-metric-card" data-tooltip="Knee flexion angle relative to anatomical neutral (0° = full extension)">
+          <div class="card-top-label">
+            <span>KNEE ANGLE</span>
+            <span class="info-icon">ⓘ</span>
+          </div>
+          <div class="hero-val-wrap">
+            <span id="card-val-angle" class="metric-hero-val text-cyan">27.3</span>
+            <span class="metric-unit">°</span>
+          </div>
+          <div class="metric-sub-label">Anatomical Neutral Ref</div>
+        </div>
+
+        <div class="primary-metric-card" data-tooltip="Commanded assistive torque from robotic actuator (|τ| &le; 35 N·m)">
+          <div class="card-top-label">
+            <span>ACTUATOR TORQUE</span>
+            <span class="info-icon">ⓘ</span>
+          </div>
+          <div class="hero-val-wrap">
+            <span id="card-val-torque" class="metric-hero-val text-amber">-3.1</span>
+            <span class="metric-unit">N·m</span>
+          </div>
+          <div id="card-sub-torque" class="metric-sub-label">AAN Augmentation</div>
+        </div>
+
+        <div class="primary-metric-card" data-tooltip="Mechanical joint power P = |τ · ω|">
+          <div class="card-top-label">
+            <span>ACTUATOR POWER</span>
+            <span class="info-icon">ⓘ</span>
+          </div>
+          <div class="hero-val-wrap">
+            <span id="card-val-power" class="metric-hero-val text-purple">1.3</span>
+            <span class="metric-unit">W</span>
+          </div>
+          <div class="metric-sub-label">P = |τ · ω| Mech</div>
+        </div>
+
+        <div class="primary-metric-card" data-tooltip="Simulated vertical ground reaction force from plantar array">
+          <div class="card-top-label">
+            <span>vGRF LOAD</span>
+            <span class="info-icon">ⓘ</span>
+          </div>
+          <div class="hero-val-wrap">
+            <span id="card-val-vgrf" class="metric-hero-val text-emerald">464</span>
+            <span class="metric-unit">N</span>
+          </div>
+          <div id="card-sub-gait" class="metric-sub-label">MID-STANCE Phase</div>
+        </div>
+      </div>
+
+      <!-- AI ASSISTANCE, SENSOR STATUS & ACTUATOR STATUS DECK -->
+      <div class="status-panels-deck">
+        <!-- AI Assistance Panel -->
+        <div class="panel-card ai-assistance-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>🤖</span> AI ASSISTANCE
+              <span class="info-icon" title="Prototype algorithm estimating assistance requirements from simulated gait parameters and voluntary user effort">ⓘ</span>
+            </div>
+            <span class="ai-status-pill">● ADAPTIVE AAN</span>
+          </div>
+          <div class="panel-subtitle">AI-assisted control simulation • Assistance-As-Needed (AAN)</div>
+          
+          <div class="ai-metrics-grid">
+            <div class="ai-metric-item">
+              <span class="ai-label">Gait Phase:</span>
+              <span id="ai-val-gait" class="ai-val text-cyan">MID-STANCE</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-label">Assistance:</span>
+              <span id="ai-val-assist" class="ai-val text-cyan">9%</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-label">Predicted Torque:</span>
+              <span id="ai-val-torque" class="ai-val text-amber">-3.1 N·m</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-label">Confidence:</span>
+              <span id="ai-val-confidence" class="ai-val text-emerald">94%</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-label">Adaptation:</span>
+              <span id="ai-val-adaptation" class="ai-val text-cyan">ACTIVE</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-label">Control Mode:</span>
+              <span id="ai-val-mode" class="ai-val">ADAPTIVE</span>
+            </div>
+          </div>
+
+          <div class="ai-recommendation-box">
+            <span class="rec-label">RECOMMENDATION:</span>
+            <span id="ai-val-recommendation" class="rec-text">Maintain assistance — nominal gait trajectory</span>
+          </div>
+        </div>
+
+        <!-- Sensor Status Panel -->
+        <div class="panel-card sensor-status-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>📡</span> SENSOR STATUS
+              <span class="info-icon" title="Simulated multi-modal sensor matrix monitoring joint angles, segment tilt, and plantar pressure">ⓘ</span>
+            </div>
+            <span class="sensor-sim-tag">SIMULATED SENSOR DATA</span>
+          </div>
+          
+          <div class="sensor-status-list">
+            <div class="sensor-status-row">
+              <div class="sensor-name-wrap">
+                <span id="dot-imu-thigh" class="sensor-health-dot active">●</span>
+                <span class="sensor-name">Thigh IMU</span>
+              </div>
+              <span class="sensor-badge">ACTIVE</span>
+              <span id="sensor-thigh-val" class="sensor-live-val">12.4°</span>
+            </div>
+
+            <div class="sensor-status-row">
+              <div class="sensor-name-wrap">
+                <span id="dot-imu-shank" class="sensor-health-dot active">●</span>
+                <span class="sensor-name">Shank IMU</span>
+              </div>
+              <span class="sensor-badge">ACTIVE</span>
+              <span id="sensor-shank-val" class="sensor-live-val">39.7°</span>
+            </div>
+
+            <div class="sensor-status-row">
+              <div class="sensor-name-wrap">
+                <span id="dot-encoder" class="sensor-health-dot active">●</span>
+                <span class="sensor-name">Knee Encoder</span>
+              </div>
+              <span class="sensor-badge">ACTIVE</span>
+              <span id="sensor-encoder-val" class="sensor-live-val">27.3°</span>
+            </div>
+
+            <div class="sensor-status-row">
+              <div class="sensor-name-wrap">
+                <span id="dot-fsr" class="sensor-health-dot active">●</span>
+                <span class="sensor-name">Force Sensor (vGRF)</span>
+              </div>
+              <span class="sensor-badge">ACTIVE</span>
+              <span id="sensor-fsr-val" class="sensor-live-val">464 N</span>
+            </div>
+
+            <div class="sensor-status-row">
+              <div class="sensor-name-wrap">
+                <span id="dot-emg" class="sensor-health-dot active">●</span>
+                <span class="sensor-name">sEMG Envelope</span>
+              </div>
+              <span class="sensor-badge">ACTIVE</span>
+              <span id="sensor-emg-val" class="sensor-live-val">0.05 RMS</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actuator Status Card -->
+        <div class="panel-card actuator-status-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>⚙️</span> ACTUATOR STATUS
+              <span class="info-icon" title="Robotic BLDC motor status, delivered torque, electrical power, and thermal monitoring">ⓘ</span>
+            </div>
+            <span id="actuator-status-tag" class="status-badge badge-normal">ACTIVE</span>
+          </div>
+          
+          <div class="actuator-status-table">
+            <div class="act-row">
+              <span class="act-key">Status:</span>
+              <span id="act-val-status" class="act-val text-cyan">ACTIVE</span>
+            </div>
+            <div class="act-row">
+              <span class="act-key">Torque:</span>
+              <span id="act-val-torque" class="act-val text-amber">-3.1 N·m</span>
+            </div>
+            <div class="act-row">
+              <span class="act-key">Power:</span>
+              <span id="act-val-power" class="act-val text-purple">1.3 W</span>
+            </div>
+            <div class="act-row">
+              <span class="act-key">Assistance:</span>
+              <span id="act-val-assist" class="act-val text-cyan">9 %</span>
+            </div>
+            <div class="act-row">
+              <span class="act-key">Joint:</span>
+              <span class="act-val">RIGHT KNEE</span>
+            </div>
+            <div class="act-row">
+              <span class="act-key">Temperature:</span>
+              <span id="act-val-temp" class="act-val text-emerald">32.4 °C</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
         <!-- Biomechanical Assistance & Robotic Actuator Power Deck -->
         <div class="power-assist-deck">
@@ -369,9 +558,30 @@
       </div>
 
       <!-- Safety Supervisory Panel -->
-      <div class="panel-card">
+      <div class="panel-card safety-supervisor-panel">
         <div class="panel-header">
-          <div class="panel-title"><span>🛡️</span> Safety Supervisor (Highest Authority)</div>
+          <div class="panel-title"><span>🛡️</span> System Safety Supervisor</div>
+          <span id="safety-super-badge" class="status-badge badge-normal">● NOMINAL</span>
+        </div>
+
+        <!-- System Safety Status Matrix (Section 9 & 20) -->
+        <div class="safety-matrix-grid">
+          <div class="safety-matrix-item">
+            <span class="sm-label">Joint Limit:</span>
+            <span id="safety-val-joint" class="sm-val text-emerald">NORMAL (0°-115°)</span>
+          </div>
+          <div class="safety-matrix-item">
+            <span class="sm-label">Actuator Limit:</span>
+            <span id="safety-val-actuator" class="sm-val text-emerald">NORMAL (&le;35 N·m)</span>
+          </div>
+          <div class="safety-matrix-item">
+            <span class="sm-label">Sensor Fault:</span>
+            <span id="safety-val-sensor" class="sm-val text-emerald">NONE</span>
+          </div>
+          <div class="safety-matrix-item">
+            <span class="sm-label">Emergency Stop:</span>
+            <span id="safety-val-estop" class="sm-val text-emerald">READY</span>
+          </div>
         </div>
 
         <div class="estop-deck">
@@ -422,6 +632,7 @@
             <button id="btn-test-fatigue-fall-acute" class="fault-btn" style="color:#f43f5e;border-color:rgba(244,63,94,0.5);font-weight:700;" title="Simulate Acute Collapse Fatigue 96% -> Immediate 30s rapid stop">Fatigue 96% (30s Urgent)</button>
             <button id="btn-fault-imu" class="fault-btn">IMU Dropout</button>
             <button id="btn-fault-fsr" class="fault-btn">FSR Disconnect</button>
+            <button id="btn-fault-encoder" class="fault-btn">Encoder Error</button>
             <button id="btn-clear-faults" class="clear-fault-btn">Clear All Interlocks</button>
           </div>
 

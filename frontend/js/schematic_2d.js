@@ -20,6 +20,8 @@ class MoveAssist2DSchematic {
     this.current_knee_deg = 0.0;
     this.current_thigh_deg = 0.0;
     this.current_shank_deg = 0.0;
+    this.thigh_pitch_deg = 0.0;
+    this.shank_pitch_deg = 0.0;
 
     this.omega_knee_deg_s = 0.0;
     this.tau_cmd_nm = 0.0;
@@ -88,6 +90,8 @@ class MoveAssist2DSchematic {
     this.fsr_toe = fsr.toe_n || 0.0;
     this.vgrf_n = fsr.total_grf_n || 0.0;
     this.emg_env = sensors.emg?.envelope_norm || 0.05;
+    this.thigh_pitch_deg = sensors.imu_thigh?.pitch_deg || this.target_thigh_deg;
+    this.shank_pitch_deg = sensors.imu_shank?.pitch_deg || this.target_shank_deg;
 
     // Gait FSM
     this.gait_phase = telemetry.gait_phase || (fsr.is_stance ? "STANCE" : "SWING");
@@ -103,30 +107,6 @@ class MoveAssist2DSchematic {
 
     // Mode tracking
     this.kin_mode = (kin.mode || 'WALK').toUpperCase().replace('-', '_');
-
-    // Update overlay text chips if present
-    const valMode = document.getElementById('schematic-val-mode');
-    if (valMode) valMode.textContent = this.kin_mode;
-
-    const valAngle = document.getElementById('schematic-val-angle');
-    if (valAngle) valAngle.textContent = `${(this.target_knee_deg || 0).toFixed(1)}°`;
-
-    const valTorque = document.getElementById('schematic-val-torque');
-    if (valTorque) valTorque.textContent = `${(this.tau_cmd_nm || 0) >= 0 ? '+' : ''}${(this.tau_cmd_nm || 0).toFixed(1)} Nm`;
-
-    const valPower = document.getElementById('schematic-val-power');
-    if (valPower) {
-      const pMech = telemetry.power?.mechanical_watts || 0.0;
-      valPower.textContent = `${pMech.toFixed(1)} W`;
-    }
-
-    const valGrf = document.getElementById('schematic-val-grf');
-    if (valGrf) valGrf.textContent = `${Math.round(this.vgrf_n)} N`;
-
-    const lockBadge = document.getElementById('schematic-lock-badge');
-    if (lockBadge) {
-      lockBadge.style.display = this.soft_stop_active ? 'flex' : 'none';
-    }
   }
 
   render() {
@@ -249,10 +229,6 @@ class MoveAssist2DSchematic {
     const endAng = startAng - thighRad;
     ctx.arc(hipX, hipY, hipArcR, Math.min(startAng, endAng), Math.max(startAng, endAng));
     ctx.stroke();
-
-    ctx.font = '600 8px monospace';
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`θ_hip: ${this.current_thigh_deg.toFixed(1)}°`, hipX + 10, hipY - 6);
     ctx.restore();
 
     // 4. Ground Contact Plane & Shadow
@@ -484,45 +460,39 @@ class MoveAssist2DSchematic {
     drawGrfVector(footToeX - 6 * scale, footToeY + 3, this.fsr_toe, 'TOE', '#38bdf8');
     ctx.restore();
 
-    // 11. Center of Mass (COM) Markers
+    // 11. Center of Mass (COM) Crosshair Indicators (Clean, no text clutter on bones)
     ctx.save();
-    const drawCom = (x, y, label, massStr) => {
+    const drawComCrosshair = (x, y) => {
       ctx.strokeStyle = '#f59e0b';
-      ctx.fillStyle = '#f59e0b';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(x, y, 5 * scale, 0, Math.PI * 2);
+      ctx.arc(x, y, 4 * scale, 0, Math.PI * 2);
       ctx.stroke();
-      // Quarters
       ctx.beginPath();
-      ctx.moveTo(x - 6 * scale, y);
-      ctx.lineTo(x + 6 * scale, y);
-      ctx.moveTo(x, y - 6 * scale);
-      ctx.lineTo(x, y + 6 * scale);
+      ctx.moveTo(x - 5 * scale, y);
+      ctx.lineTo(x + 5 * scale, y);
+      ctx.moveTo(x, y - 5 * scale);
+      ctx.lineTo(x, y + 5 * scale);
       ctx.stroke();
-
-      ctx.font = '500 7px monospace';
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillText(`${label} (${massStr})`, x + 8 * scale, y + 2);
     };
 
     const comThighX = hipX + (kneeX - hipX) * 0.433;
     const comThighY = hipY + (kneeY - hipY) * 0.433;
-    drawCom(comThighX, comThighY, 'COM_thigh', '4.4kg');
+    drawComCrosshair(comThighX, comThighY);
 
     const comShankX = kneeX + (ankleX - kneeX) * 0.433;
     const comShankY = kneeY + (ankleY - kneeY) * 0.433;
-    drawCom(comShankX, comShankY, 'COM_shank', '3.3kg');
+    drawComCrosshair(comShankX, comShankY);
     ctx.restore();
 
     // 12. ROTARY KNEE ACTUATOR (Detailed Engineering Module)
     ctx.save();
-    const actR = 24 * scale;
+    const actR = 22 * scale;
 
     // Outer Gear Rim / Housing
     ctx.fillStyle = '#0b1329';
     ctx.strokeStyle = this.soft_stop_active ? '#fbbf24' : '#06b6d4';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(kneeX, kneeY, actR, 0, Math.PI * 2);
     ctx.fill();
@@ -532,8 +502,8 @@ class MoveAssist2DSchematic {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     for (let i = 0; i < 8; i++) {
       const bAng = (i * Math.PI) / 4;
-      const bx = kneeX + (actR - 4) * Math.cos(bAng);
-      const by = kneeY + (actR - 4) * Math.sin(bAng);
+      const bx = kneeX + (actR - 3.5) * Math.cos(bAng);
+      const by = kneeY + (actR - 3.5) * Math.sin(bAng);
       ctx.beginPath();
       ctx.arc(bx, by, 1.2, 0, Math.PI * 2);
       ctx.fill();
@@ -543,11 +513,10 @@ class MoveAssist2DSchematic {
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(kneeX, kneeY, actR - 8 * scale, 0, Math.PI * 2);
+    ctx.arc(kneeX, kneeY, actR - 7 * scale, 0, Math.PI * 2);
     ctx.stroke();
 
     // Knee Physiological ROM Sector (0 to 115 deg)
-    // Reference line: extending from thigh direction
     const refExtAng = thighRad + Math.PI / 2;
     const maxFlexAng = refExtAng - (115 * Math.PI) / 180.0;
 
@@ -555,7 +524,7 @@ class MoveAssist2DSchematic {
     ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
     ctx.beginPath();
     ctx.moveTo(kneeX, kneeY);
-    ctx.arc(kneeX, kneeY, actR + 14 * scale, maxFlexAng, refExtAng);
+    ctx.arc(kneeX, kneeY, actR + 12 * scale, maxFlexAng, refExtAng);
     ctx.closePath();
     ctx.fill();
 
@@ -564,33 +533,33 @@ class MoveAssist2DSchematic {
     ctx.fillStyle = 'rgba(6, 182, 212, 0.25)';
     ctx.beginPath();
     ctx.moveTo(kneeX, kneeY);
-    ctx.arc(kneeX, kneeY, actR + 14 * scale, curFlexAng, refExtAng);
+    ctx.arc(kneeX, kneeY, actR + 12 * scale, curFlexAng, refExtAng);
     ctx.closePath();
     ctx.fill();
 
     // Active Wedge Outline Arc
     ctx.strokeStyle = '#06b6d4';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.arc(kneeX, kneeY, actR + 14 * scale, curFlexAng, refExtAng);
+    ctx.arc(kneeX, kneeY, actR + 12 * scale, curFlexAng, refExtAng);
     ctx.stroke();
 
     // Actuator Center Core & Shaft
     ctx.fillStyle = this.soft_stop_active ? '#fbbf24' : '#0284c7';
     ctx.beginPath();
-    ctx.arc(kneeX, kneeY, 6 * scale, 0, Math.PI * 2);
+    ctx.arc(kneeX, kneeY, 5 * scale, 0, Math.PI * 2);
     ctx.fill();
 
-    // Actuator Dynamic Torque Vector (Curved Arrow)
+    // Actuator Dynamic Torque Vector (Curved Rotational Arrow)
     const tauMag = Math.abs(this.tau_cmd_nm);
-    if (tauMag > 0.5) {
+    if (tauMag > 0.3) {
       const torqueDir = this.tau_cmd_nm >= 0 ? 1 : -1; // +1 Extension, -1 Flexion
       const torqueColor = this.soft_stop_active ? '#fbbf24' : (torqueDir > 0 ? '#10b981' : '#a855f7');
-      const arrowRadius = actR + 24 * scale;
-      const sweepAng = Math.min(Math.PI * 0.8, (tauMag / 35.0) * Math.PI * 0.8);
+      const arrowRadius = actR + 18 * scale;
+      const sweepAng = Math.min(Math.PI * 0.75, 0.2 + (tauMag / 35.0) * Math.PI * 0.75);
 
       ctx.strokeStyle = torqueColor;
-      ctx.lineWidth = Math.min(5, 1.5 + (tauMag / 35.0) * 3.5);
+      ctx.lineWidth = Math.min(4, 1.5 + (tauMag / 35.0) * 2.5);
       ctx.beginPath();
       if (torqueDir > 0) {
         ctx.arc(kneeX, kneeY, arrowRadius, -Math.PI / 2, -Math.PI / 2 + sweepAng, false);
@@ -598,73 +567,140 @@ class MoveAssist2DSchematic {
         ctx.arc(kneeX, kneeY, arrowRadius, -Math.PI / 2, -Math.PI / 2 - sweepAng, true);
       }
       ctx.stroke();
-
-      // Torque label
-      ctx.font = '700 9px monospace';
-      ctx.fillStyle = torqueColor;
-      const torqueLabel = `${this.tau_cmd_nm >= 0 ? '+' : ''}${this.tau_cmd_nm.toFixed(1)} Nm`;
-      ctx.fillText(`τ_exo: ${torqueLabel}`, kneeX + actR + 8 * scale, kneeY - 10 * scale);
-    }
-
-    // Controlled Soft Stop / Stance Lock Graphic
-    if (this.soft_stop_active) {
-      ctx.strokeStyle = '#fbbf24';
-      ctx.fillStyle = '#fbbf24';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(kneeX, kneeY, actR + 28 * scale, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.font = '700 8px "SF Pro", Inter, sans-serif';
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillText('🔒 ANTI-COLLAPSE LOCK (+18.0 Nm)', kneeX + actR + 8 * scale, kneeY + 12 * scale);
     }
     ctx.restore();
 
-    // 13. Technical Blueprint Dimension Annotations & Badges
+    // 13. ENGINEERING CALLOUT CHANNELS & LEADER LINES (No labels on limbs!)
     ctx.save();
-    // Knee Angle Readout Callout
-    ctx.font = '700 11px monospace';
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`θ_knee = ${this.current_knee_deg.toFixed(1)}°`, kneeX - 85 * scale, kneeY - 14 * scale);
+    const leftW = Math.min(125, Math.max(95, w * 0.26));
+    const rightW = Math.min(155, Math.max(120, w * 0.32));
+    const rightX = w - rightW - 10;
 
-    ctx.font = '500 8px monospace';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(`ω_knee = ${this.omega_knee_deg_s.toFixed(1)}°/s`, kneeX - 85 * scale, kneeY - 2 * scale);
+    // Helper to draw callout card and leader line
+    const drawCallout = (x, y, width, height, title, rows, targetX, targetY, isLeft) => {
+      // Background box
+      ctx.fillStyle = 'rgba(11, 19, 36, 0.92)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 4);
+      ctx.fill();
+      ctx.stroke();
 
-    // IMU Sensor Chips
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1;
-    // Thigh IMU
-    ctx.strokeRect(hipX + 18 * scale, hipY + 45 * scale, 34 * scale, 12 * scale);
-    ctx.font = '600 7px monospace';
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText('IMU-THIGH', hipX + 20 * scale, hipY + 54 * scale);
+      // Header bar
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
+      ctx.fillRect(x, y, width, 14);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+      ctx.beginPath();
+      ctx.moveTo(x, y + 14);
+      ctx.lineTo(x + width, y + 14);
+      ctx.stroke();
 
-    // Shank IMU
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeRect(kneeX + 18 * scale, kneeY + 45 * scale, 34 * scale, 12 * scale);
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText('IMU-SHANK', kneeX + 20 * scale, kneeY + 54 * scale);
+      // Title
+      ctx.font = '700 7.5px monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(title, x + 5, y + 10);
 
-    // Optical Encoder
-    ctx.fillStyle = '#06b6d4';
-    ctx.fillText('12-bit ENCODER', kneeX - 75 * scale, kneeY + 22 * scale);
+      // Rows
+      let rowY = y + 23;
+      rows.forEach(r => {
+        ctx.font = r.bold ? '700 7.5px monospace' : '500 7px monospace';
+        ctx.fillStyle = r.color || '#94a3b8';
+        ctx.fillText(r.text, x + 5, rowY);
+        rowY += 10;
+      });
+
+      // Leader line
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+
+      const startX = isLeft ? (x + width) : x;
+      const startY = y + height * 0.5;
+      const elbowX = isLeft ? (startX + 10) : (startX - 10);
+
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(elbowX, startY);
+      ctx.lineTo(targetX, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Anchor dot
+      ctx.fillStyle = '#06b6d4';
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    // Callout 1 (Top Left): Hip / Pelvis
+    drawCallout(10, 34, leftW, 36, 'HIP / PELVIS', [
+      { text: `θ_hip: ${(this.current_thigh_deg || 0).toFixed(1)}°`, color: '#38bdf8', bold: true },
+      { text: 'Plumb line ref (0°)', color: '#64748b' }
+    ], hipX, hipY, true);
+
+    // Callout 2 (Mid-Upper Left): Thigh
+    drawCallout(10, 78, leftW, 46, 'THIGH SEGMENT', [
+      { text: 'COM: 4.4kg (43%)', color: '#fbbf24' },
+      { text: `IMU: ${(this.thigh_pitch_deg || 0).toFixed(1)}° pitch`, color: '#38bdf8' },
+      { text: 'Femur 42cm', color: '#64748b' }
+    ], comThighX, comThighY, true);
+
+    // Callout 3 (Mid-Lower Left): Shank
+    drawCallout(10, 132, leftW, 46, 'SHANK SEGMENT', [
+      { text: 'COM: 3.3kg (43%)', color: '#fbbf24' },
+      { text: `IMU: ${(this.shank_pitch_deg || 0).toFixed(1)}° pitch`, color: '#38bdf8' },
+      { text: 'Tibia 42cm', color: '#64748b' }
+    ], comShankX, comShankY, true);
+
+    // Callout 4 (Bottom Left): Ankle & Footplate
+    drawCallout(10, 186, leftW, 36, 'ANKLE & FOOT', [
+      { text: 'Ankle: 0° Neutral', color: '#94a3b8' },
+      { text: 'Carbon Footplate', color: '#64748b' }
+    ], ankleX, ankleY, true);
+
+    // Callout 5 (Right Center): KNEE ACTUATOR & KINEMATICS (Single Source of Truth!)
+    const kneeAngleSingleSource = (this.target_knee_deg || 0).toFixed(1);
+    const torqueStr = `${(this.tau_cmd_nm || 0) >= 0 ? '+' : ''}${(this.tau_cmd_nm || 0).toFixed(1)} N·m`;
+    const torqueColor = (this.tau_cmd_nm || 0) >= 0 ? '#10b981' : '#a855f7';
+
+    drawCallout(rightX, 34, rightW, 76, 'KNEE ACTUATOR & JOINT', [
+      { text: `Flexion: ${kneeAngleSingleSource}°`, color: '#38bdf8', bold: true },
+      { text: `Velocity: ${(this.omega_knee_deg_s || 0).toFixed(1)}°/s`, color: '#94a3b8' },
+      { text: `τ_exo: ${torqueStr}`, color: torqueColor, bold: true },
+      { text: 'Encoder: 12-bit (0.088°)', color: '#06b6d4' },
+      { text: 'Safe ROM: 0° - 115°', color: '#64748b' }
+    ], kneeX, kneeY, false);
+
+    // Callout 6 (Right Lower): sEMG Biological Drive
+    drawCallout(rightX, 118, rightW, 46, 'BIOMECHANICAL DRIVE', [
+      { text: `sEMG: ${(this.emg_env || 0).toFixed(2)} RMS`, color: '#10b981', bold: true },
+      { text: 'Rectus Femoris', color: '#64748b' },
+      { text: `Mode: ${this.kin_mode || 'WALK'}`, color: '#38bdf8' }
+    ], patellaX, patellaY, false);
+
+    // Anti-Fall Stance Lock Callout (if active)
+    if (this.soft_stop_active) {
+      drawCallout(rightX, 172, rightW, 36, 'ANTI-FALL LOCK', [
+        { text: '+18.0 N·m STANCE HOLD', color: '#fbbf24', bold: true },
+        { text: `${Math.round(this.soft_stop_rem_s)}s Decel Ramp`, color: '#fbbf24' }
+      ], kneeX + 12 * scale, kneeY, false);
+    }
 
     // Gait Status Pill at bottom right
-    const pillX = w - 120;
-    const pillY = h - 28;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    const pillX = w - 125;
+    const pillY = h - 26;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
     ctx.beginPath();
-    ctx.roundRect(pillX, pillY, 110, 18, 4);
+    ctx.roundRect(pillX, pillY, 115, 18, 4);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = '600 8px monospace';
+    ctx.font = '700 7.5px monospace';
     ctx.fillStyle = this.gait_phase === 'SWING' ? '#a855f7' : '#10b981';
     ctx.fillText(`GAIT: ${this.gait_phase}`, pillX + 8, pillY + 12);
+    ctx.restore();
     ctx.restore();
   }
 }

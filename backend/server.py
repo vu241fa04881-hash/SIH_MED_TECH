@@ -148,6 +148,7 @@ class MoveAssistRequestHandler(BaseHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header("Content-Type", mime_type)
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.send_header("Content-Length", str(len(content)))
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
@@ -220,6 +221,20 @@ class MoveAssistRequestHandler(BaseHTTPRequestHandler):
                 "mode": self.engine.kinematic_mode,
                 "jog_angle_deg": self.engine.manual_jog_angle_deg
             })
+        elif path == "/api/simulation/start":
+            self.engine.start_background_loop()
+            self._send_json({"status": "success", "running": True})
+        elif path == "/api/simulation/stop":
+            self.engine.stop_background_loop()
+            self._send_json({"status": "success", "running": False})
+        elif path == "/api/simulation/toggle":
+            if self.engine._is_running:
+                self.engine.stop_background_loop()
+                running = False
+            else:
+                self.engine.start_background_loop()
+                running = True
+            self._send_json({"status": "success", "running": running})
         else:
             self.send_error(404, "Endpoint Not Found")
 

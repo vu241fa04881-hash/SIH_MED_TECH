@@ -5,10 +5,34 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Subsystems
-  const viewer = new MoveAssist3DViewer('three-canvas-container');
-  const schematic2D = new MoveAssist2DSchematic('schematic-2d-canvas');
-  const charts = new MoveAssistChartsManager();
-  const dashboard = new MoveAssistDashboard(viewer, charts);
+  let viewer = null;
+  let schematic2D = null;
+  let charts = null;
+  let dashboard = null;
+
+  try {
+    viewer = new MoveAssist3DViewer('three-canvas-container');
+  } catch (e) {
+    console.error('[MoveAssist] Failed to initialize 3D Viewer:', e);
+  }
+
+  try {
+    schematic2D = new MoveAssist2DSchematic('schematic-2d-canvas');
+  } catch (e) {
+    console.error('[MoveAssist] Failed to initialize 2D Schematic:', e);
+  }
+
+  try {
+    charts = new MoveAssistChartsManager();
+  } catch (e) {
+    console.error('[MoveAssist] Failed to initialize Charts:', e);
+  }
+
+  try {
+    dashboard = new MoveAssistDashboard(viewer, charts);
+  } catch (e) {
+    console.error('[MoveAssist] Failed to initialize Dashboard:', e);
+  }
 
   // Split View Mode Management
   const viewportStage = document.getElementById('viewport-stage');
