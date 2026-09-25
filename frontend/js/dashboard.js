@@ -102,6 +102,7 @@ class MoveAssistDashboard {
 
     // 5 Primary Metric Cards
     this.cardValMode = document.getElementById('card-val-mode');
+    this.cardSubMode = document.getElementById('card-sub-mode');
     this.cardValAngle = document.getElementById('card-val-angle');
     this.cardValTorque = document.getElementById('card-val-torque');
     this.cardSubTorque = document.getElementById('card-sub-torque');
@@ -638,6 +639,23 @@ class MoveAssistDashboard {
     const grfFormatted = Math.round(sensors.foot_pressure?.total_grf_n || 0);
 
     if (this.cardValMode) this.cardValMode.textContent = currentMode;
+    if (this.cardSubMode) {
+      if (currentMode === 'RUN') {
+        const spm = gait.cadence_spm || 141.2;
+        const period = gait.stride_period_s || 0.85;
+        this.cardSubMode.textContent = `${period}s Cadence (${Math.round(spm)} spm)`;
+      } else if (currentMode === 'WALK') {
+        const spm = gait.cadence_spm || 60.0;
+        const period = gait.stride_period_s || 2.0;
+        this.cardSubMode.textContent = `${period}s Cadence (${Math.round(spm)} spm)`;
+      } else if (currentMode === 'SIT_STAND') {
+        this.cardSubMode.textContent = 'Bilateral Transfer (0-85°)';
+      } else if (currentMode === 'STANDBY') {
+        this.cardSubMode.textContent = 'Upright Stance Lock (8°)';
+      } else {
+        this.cardSubMode.textContent = 'Manual Direct Joint Jog';
+      }
+    }
     if (this.cardValAngle) this.cardValAngle.textContent = singleSourceKneeAngle;
     if (this.cardValTorque) this.cardValTorque.textContent = cmdTorqueFormatted;
     if (this.cardSubTorque) {

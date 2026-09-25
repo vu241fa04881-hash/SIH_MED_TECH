@@ -229,46 +229,65 @@ class SimulationEngine:
                     target_thigh_angle = 75.0
                     is_stance_phase = False
             elif self.kinematic_mode == "RUN":
-                # Athletic running cadence (0.85s stride period, swing flexion up to 68 deg)
+                # Athletic running cadence (0.85s stride period, ~141 steps/min, true running flight/stance phase)
                 run_period = 0.85
+                self.gait_fsm.set_cycle_period(run_period)
                 self.gait_sim_time += self.dt * vel_scale
                 cycle_time = self.gait_sim_time % run_period
                 p = (cycle_time / run_period) * 100.0
 
-                if p < 38.0:
-                    sub = p / 38.0
-                    target_knee_angle = 18.0 * math.sin(sub * math.pi)
-                    is_stance_phase = True
-                elif p < 70.0:
-                    sub = (p - 38.0) / 32.0
-                    target_knee_angle = 18.0 + 50.0 * math.sin(sub * (math.pi / 2.0))
-                    is_stance_phase = False
+                # Human physiological running profile
+                # Stance phase (0-38%): shock absorption and elastic rebound
+                if p < 20.0:
+                    sub = p / 20.0
+                    target_knee_angle = 12.0 + 16.0 * math.sin(sub * (math.pi / 2.0))
+                elif p < 38.0:
+                    sub = (p - 20.0) / 18.0
+                    target_knee_angle = 28.0 - 18.0 * sub
+                # Swing phase (38-100%): natural posterior knee flexion for clearance, then terminal extension to foot-flat
+                elif p < 68.0:
+                    sub = (p - 38.0) / 30.0
+                    target_knee_angle = 10.0 + 58.0 * math.sin(sub * (math.pi / 2.0))
                 else:
-                    sub = (p - 70.0) / 30.0
-                    target_knee_angle = 68.0 * math.cos(sub * (math.pi / 2.0))
-                    is_stance_phase = False
-                target_thigh_angle = 20.0 * math.sin(2.0 * math.pi * (cycle_time / run_period) + 0.4)
-            else:
-                # Default "WALK": Clinical rehabilitation gait cadence (2.0s period, 0-45 deg flexion)
-                self.gait_sim_time += self.dt * vel_scale
-                cycle_time = self.gait_sim_time % self.gait_fsm.cycle_period_s
-                p = (cycle_time / self.gait_fsm.cycle_period_s) * 100.0
+                    sub = (p - 68.0) / 32.0
+                    blend = 0.5 * (1.0 + math.cos(sub * math.pi))
+                    target_knee_angle = 12.0 + 56.0 * blend
 
+                # Human running hip angle (peaks at forward heel strike p=0%, extends back at toe-off p=38%)
+                target_thigh_angle = 5.0 + 24.0 * math.cos(2.0 * math.pi * (p / 100.0))
+                is_stance_phase = p < 38.0
+            else:
+                # Default "WALK": Clinical human gait profile (Winter's biomechanics, 2.0s period, 60 steps/min)
+                walk_period = 2.0
+                self.gait_fsm.set_cycle_period(walk_period)
+                self.gait_sim_time += self.dt * vel_scale
+                cycle_time = self.gait_sim_time % walk_period
+                p = (cycle_time / walk_period) * 100.0
+
+                # 0-15%: Loading response (shock absorption 4 -> 16 deg)
+                # 15-40%: Midstance support (straight leg column 16 -> 4 deg)
+                # 40-60%: Terminal stance & push-off (4 -> 32 deg)
+                # 60-73%: Initial swing clearance (32 -> 58 deg)
+                # 73-100%: Terminal swing forward extension (knee reaches forward 58 -> 4 deg)
                 if p < 15.0:
-                    target_knee_angle = 14.0 * math.sin((p / 15.0) * (math.pi / 2.0))
+                    sub = p / 15.0
+                    target_knee_angle = 4.0 + 12.0 * math.sin(sub * (math.pi / 2.0))
                 elif p < 40.0:
                     sub = (p - 15.0) / 25.0
-                    target_knee_angle = 14.0 - (10.0 * sub)
+                    target_knee_angle = 16.0 - 12.0 * sub
                 elif p < 60.0:
                     sub = (p - 40.0) / 20.0
-                    target_knee_angle = 4.0 + (24.0 * math.sin(sub * (math.pi / 2.0)))
-                elif p < 75.0:
-                    sub = (p - 60.0) / 15.0
-                    target_knee_angle = 28.0 + (17.0 * math.sin(sub * (math.pi / 2.0)))
+                    target_knee_angle = 4.0 + 28.0 * math.sin(sub * (math.pi / 2.0))
+                elif p < 73.0:
+                    sub = (p - 60.0) / 13.0
+                    target_knee_angle = 32.0 + 26.0 * math.sin(sub * (math.pi / 2.0))
                 else:
-                    sub = (p - 75.0) / 25.0
-                    target_knee_angle = 45.0 * math.cos(sub * (math.pi / 2.0))
-                target_thigh_angle = 14.0 * math.sin(2.0 * math.pi * (cycle_time / self.gait_fsm.cycle_period_s) + 0.4)
+                    sub = (p - 73.0) / 27.0
+                    blend = 0.5 * (1.0 + math.cos(sub * math.pi))
+                    target_knee_angle = 4.0 + 54.0 * blend
+
+                # Human walking hip angle (peaks at forward heel strike p=0%, extends back at toe-off p=50%)
+                target_thigh_angle = 4.0 + 18.0 * math.cos(2.0 * math.pi * (p / 100.0)) + 2.5 * math.cos(4.0 * math.pi * (p / 100.0))
                 is_stance_phase = p < 60.0
 
             # If Controlled Soft Stop is active, smoothly settle into anti-collapse upright stance posture (12 deg knee)
@@ -276,6 +295,9 @@ class SimulationEngine:
                 blend_stop = 1.0 - vel_scale
                 target_knee_angle = (1.0 - blend_stop) * target_knee_angle + blend_stop * 12.0
                 target_thigh_angle = (1.0 - blend_stop) * target_thigh_angle + blend_stop * 2.0
+
+            # Enforce strict anatomical knee range of motion limits (0° to 120° flexion, zero hyperextension/recurvatum)
+            target_knee_angle = max(0.0, min(120.0, float(target_knee_angle)))
 
             # Numerical velocity
             prev_knee = self.theta_knee_deg
@@ -466,9 +488,11 @@ class SimulationEngine:
                 },
                 "gait": {
                     "phase": fsm_data["phase"],
-                    "cycle_percent": fsm_data["cycle_percent"],
+                    "cycle_percent": round(p, 1),
                     "stride_count": fsm_data["stride_count"],
-                    "is_stance": fsm_data["is_stance"],
+                    "is_stance": bool(is_stance_phase),
+                    "stride_period_s": round(0.85 if self.kinematic_mode == "RUN" else 2.0, 2),
+                    "cadence_spm": round(120.0 / (0.85 if self.kinematic_mode == "RUN" else 2.0), 1),
                 },
                 "sensors": {
                     "imu_thigh": imu_thigh_data,
